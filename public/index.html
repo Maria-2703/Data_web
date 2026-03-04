@@ -1,132 +1,181 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-</head>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    </head>
 
-<body>
+    <body>
 
-    <label>Upload a CSV:</label>
-    <input type="file" id="csvInput" accept=".csv" />
-    <input type="button" value="Show CSV" onclick="display_csv()" />
+        <label>Upload a CSV:</label>
+        <input type="file" id="csvInput" accept=".csv" />
+        <input type="button" value="Show CSV" onclick="display_csv()" />
 
-    <br><br>
+        <br><br>
 
-    <label>Enter API URL:</label>
-    <input type="url" id="apiInput" placeholder="https://example.com" size="40" required />
-    <input type="button" value="Show API" onclick="display_api()" />
+        <label>Enter API URL:</label>
+        <input type="url" id="apiInput" placeholder="https://example.com" size="40" required />
+        <input type="button" value="Show API" onclick="display_api()" />
 
-    <pre id="output"></pre>
+        <pre id="output"></pre>
 
-    <div id="variableOpts">
-        <label>Select variables</label>
-    </div>
+        <div id="getVar">
+            <div id="indVar"></div>
+            <div id="depVar"></div>
+        </div>
 
-    <script>
-        // variables for the contents
-        let csv_content = "";
-        let api_content = "";
+        <script>
+            // variables for the contents
+            let csv_content = "";
+            let api_content = "";
+            let lines = [];
+            let headers = [];
 
-        // Read file when CSV is selected
-        document.getElementById("csvInput").addEventListener('change', function(event) {
+            // Read file when CSV is selected
+            document.getElementById("csvInput").addEventListener('change', function(event) {
 
-            const file = event.target.files[0];
-            if (!file) return;
+                const file = event.target.files[0];
+                if (!file) return;
 
-            const reader = new FileReader();
+                const reader = new FileReader();
 
-            reader.onload = function(e) {
-                csv_content = e.target.result;  // save data
-                select_var();
-            };
+                // save data
+                reader.onload = function(e) {
+                    csv_content = e.target.result;  
+                };
+                reader.readAsText(file);
+            });
 
-            reader.readAsText(file);
-        });
+            // display CSV
+            function display_csv() {
+                if (!csv_content) {
+                    alert("No CSV loaded yet.");
+                    return;
+                }
+                // split into lines
+                lines = csv_content.trim().split(/\r?\n/);
+                let html = '<table border="1">';
 
-        // select ind & dep variables
-        function select_var()
-        {
-            const lines = csv_content.split(/\r?\n/);
-            const headers = lines[0].split(',');   // get the first row (column names)
-            console.log(headers);  /////////////////////////////////////////////////////////////////////////////
-            const variables = document.getElementById("variableOpts");
-            variables.innerHTML = ""; 
-
-            // button for each 
-            headers.forEach(header => {
-                const btn = document.createElement("button");
-                btn.textContent = header;  
-                btn.addEventListener("click", function() {
-                    alert("You clicked column: " + header);
+                // header (cols)
+                headers = lines[0].split(',');
+                html += '<thead><tr>';
+                headers.forEach(header => {
+                    html += `<th>${header}</th>`;
                 });
+                html += '</tr></thead>';
 
-                variables.appendChild(btn);  
-            });
-        }
-
-        // Display CSV
-        function display_csv() {
-            if (!csv_content) {
-                alert("No CSV loaded yet.");
-                return;
+                // body
+                html += '<tbody>';
+                for (let i = 1; i < lines.length; i++) {
+                    const cells = lines[i].split(',');
+                    if (cells.length === headers.length) { // Ensure consistent row structure
+                        html += '<tr>';
+                        cells.forEach(cell => {
+                            html += `<td>${cell}</td>`;
+                        });
+                        html += '</tr>';
+                    }
+                }
+                html += '</tbody>';
+                html += '</table>';
+                document.getElementById('output').innerHTML = html;
+                select_var();
             }
-            // split into lines
-            const lines = csv_content.split(/\r?\n/);
-            let html = '<table border="1">';
 
-            // Header
-            const headers = lines[0].split(',');
-            html += '<thead><tr>';
-            headers.forEach(header => {
-                html += `<th>${header}</th>`;
-            });
-            html += '</tr></thead>';
+            // select ind & dep variables
+            function select_var() {
+                // get column names
+                const lines = csv_content.trim().split(/\r?\n/);
+                const headers = lines[0].split(',');
 
-            // Body
-            html += '<tbody>';
-            for (let i = 1; i < lines.length; i++) {
-                const cells = lines[i].split(',');
-                if (cells.length === headers.length) { // Ensure consistent row structure
-                    html += '<tr>';
-                    cells.forEach(cell => {
-                        html += `<td>${cell}</td>`;
-                    });
-                    html += '</tr>';
+                // dropdown to choose variables
+                createDropdown("indVar", "indSelect", "Independent Variable:", headers);
+                createDropdown("depVar", "depSelect", "Dependent Variable:", headers);
+
+                // stats button once variables have been selectec
+                const statsContainer = document.getElementById("getVar");
+
+                if (!document.getElementById("statBtn")) {
+                    const statBtn = document.createElement("button");
+                    statBtn.id = "statBtn";
+                    statBtn.textContent = "Get statistics";
+                    statsContainer.appendChild(statBtn);
+                    statBtn.addEventListener("click", store_var);  // goes to store_var function
                 }
             }
-            html += '</tbody>';
-            html += '</table>';
-            document.getElementById('output').innerHTML = html;
-        }
 
+            function createDropdown(containerId, selectId, labelText, optionsArray) {
+                const container = document.getElementById(containerId);
+                container.innerHTML = "";
 
-        // Fetch and Display API
-        async function display_api() {
+                // create label
+                const label = document.createElement("label");
+                label.textContent = labelText;
 
-            const url = document.getElementById("apiInput").value;
+                // create select
+                const select = document.createElement("select");
+                select.id = selectId;
 
-            if (!url) {
-                alert("Please enter an API URL.");
-                return;
+                // add options
+                for (let i = 0; i < optionsArray.length; i++) {
+                    const optionValue = optionsArray[i];
+                    const option = document.createElement("option");
+                    option.value = i;  // index 
+                    option.textContent = optionValue;
+                    select.appendChild(option);
+                };
+
+                // append everything
+                container.appendChild(label);
+                container.appendChild(select);
             }
 
-            try {
-                const response = await fetch(url);
-                const data = await response.json();
+            function store_var() {
+                // get the x and y 
+                const x = document.getElementById("indSelect").value;
+                const y = document.getElementById("depSelect").value;
+                const xData = [];
+                const yData = [];
 
-                api_content = data;
-
-                document.getElementById('output').innerText =
-                    JSON.stringify(api_content, null, 2);
-
-            } catch (error) {
-                console.error("Error:", error);
-                alert("Failed to fetch API.");
+                // get their values
+                for (let i = 1; i < lines.length; i++) {
+                    const cells = lines[i].split(',');
+                    if (cells.length === headers.length) { // Ensure consistent row structure
+                        xData.push(cells[x]);
+                        yData.push(cells[y]);
+                    }
+                }
+                console.log(xData);
+                console.log(yData);
             }
-        }
 
-    </script>
 
-</body>
+            // Fetch and Display API
+            async function display_api() {
+
+                const url = document.getElementById("apiInput").value;
+
+                if (!url) {
+                    alert("Please enter an API URL.");
+                    return;
+                }
+
+                try {
+                    const response = await fetch(url);
+                    const data = await response.json();
+
+                    api_content = data;
+
+                    document.getElementById('output').innerText =
+                        JSON.stringify(api_content, null, 2);
+
+                } catch (error) {
+                    console.error("Error:", error);
+                    alert("Failed to fetch API.");
+                }
+            }
+
+        </script>
+
+    </body>
 </html>
