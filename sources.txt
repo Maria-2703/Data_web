@@ -1,0 +1,7 @@
+loading file: https://medium.com/@ryan_forrester_/read-csv-files-in-javascript-how-to-guide-8d0ac6df082a
+csv to html: https://dev.to/dataformathub/transform-csv-data-to-html-tables-for-web-display-a-comprehensive-guide-443
+api to html: https://medium.com/@Afiya_Techy/how-to-display-api-data-in-table-form-using-html-css-and-javascript-870417650d1b
+
+js button: https://medium.com/@dillonf2/creating-a-very-simple-button-in-javascript-51b870133bc6
+js button: https://www.geeksforgeeks.org/html/html-dom-button-object/
+js dropdown button: https://stackoverflow.com/questions/51328045/click-the-button-to-create-a-select-and-an-option-element
