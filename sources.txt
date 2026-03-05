@@ -5,3 +5,6 @@ api to html: https://medium.com/@Afiya_Techy/how-to-display-api-data-in-table-fo
 js button: https://medium.com/@dillonf2/creating-a-very-simple-button-in-javascript-51b870133bc6
 js button: https://www.geeksforgeeks.org/html/html-dom-button-object/
 js dropdown button: https://stackoverflow.com/questions/51328045/click-the-button-to-create-a-select-and-an-option-element
+
+mean: https://medium.com/@ryan_forrester_/average-of-an-array-in-javascript-how-to-guide-85e97dd1443e
+other formulas: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/reduce
