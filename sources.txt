@@ -1,5 +1,6 @@
 loading file: https://medium.com/@ryan_forrester_/read-csv-files-in-javascript-how-to-guide-8d0ac6df082a
 csv to html: https://dev.to/dataformathub/transform-csv-data-to-html-tables-for-web-display-a-comprehensive-guide-443
+json to arrays: https://www.geeksforgeeks.org/javascript/how-to-convert-json-string-to-array-of-json-objects-using-javascript/ 
 api to html: https://medium.com/@Afiya_Techy/how-to-display-api-data-in-table-form-using-html-css-and-javascript-870417650d1b
 
 js button: https://medium.com/@dillonf2/creating-a-very-simple-button-in-javascript-51b870133bc6
@@ -8,3 +9,5 @@ js dropdown button: https://stackoverflow.com/questions/51328045/click-the-butto
 
 mean: https://medium.com/@ryan_forrester_/average-of-an-array-in-javascript-how-to-guide-85e97dd1443e
 other formulas: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/reduce
+
+api valenbisi: https://valencia.opendatasoft.com/api/explore/v2.1/catalog/datasets/valenbisi-disponibilitat-valenbisi-dsiponibilidad/records?limit=10

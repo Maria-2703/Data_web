@@ -168,11 +168,21 @@
                 }
 
                 try{
+                    // get the data
                     const response = await fetch(url);
                     const data = await response.json();
-                    api_content = data;
-                    document.getElementById("output").innerText =
-                        JSON.stringify(api_content,null,2);
+                    const records = data.results;
+                
+                    // get headers
+                    headers = Object.keys(records[0]);
+
+                    // obj -> rows
+                    lines = records.map(obj => 
+                        headers.map(h => obj[h]).join(",")
+                    );
+
+                    renderTable(headers, lines);
+                    createVariableSelectors(headers);
                 }
                 catch(error){
 
@@ -196,7 +206,7 @@
                 html += "</tr></thead>";
                 html += "<tbody>";
 
-                for(let i=1;i<lines.length;i++){
+                for(let i=0;i<lines.length;i++){
                     const cells = lines[i].split(',');
 
                     if(cells.length === headers.length){
