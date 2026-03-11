@@ -1,339 +1,127 @@
 <!DOCTYPE html>
 <html lang="en">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>CSV Statistics Tool</title>
-    </head>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <body>
-        <h2>Statistics Tool</h2>
+<title>CSV Statistics Dashboard</title>
 
-        <label>Upload a CSV:</label>
+<!-- Google Fonts for a modern look -->
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="styles.css">
+
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<link rel="stylesheet" href="styles.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="app.js" defer></script>
+
+</head>
+<body>
+
+<div class="container">
+
+    <header>
+        <h1>📊 CSV Statistics Dashboard</h1>
+        <p>Upload your CSV or fetch from an API to view statistics and regression graph.</p>
+    </header>
+
+    <section class="card">
+        <h2>Upload CSV</h2>
         <input type="file" id="csvInput" accept=".csv">
         <button onclick="displayCSV()">Show CSV</button>
+    </section>
 
-        <br><br>
-
-        <label>Enter API URL:</label>
-        <input type="url" id="apiInput" placeholder="https://example.com" size="40">
+    <section class="card">
+        <h2>API Data</h2>
+        <input type="url" id="apiInput" placeholder="https://example.com">
         <button onclick="displayAPI()">Show API</button>
+    </section>
 
-        <br><br>
-
+    <section class="card tableCard">
+        <h2>Dataset</h2>
         <div id="output"></div>
+    </section>
 
-        <br>
-
+    <section class="card selectorsCard">
+        <h2>Select Variables</h2>
         <div id="variableSelectors">
             <div id="indVar"></div>
             <div id="depVar"></div>
         </div>
-
-        <br>
-
-        <div id="stats"></div>
-
-        <script>
-            // global variables
-            let csv_content = "";
-            let api_content = "";
-            let lines = [];
-            let headers = [];
-
-            // read file
-            document.getElementById("csvInput").addEventListener("change", function(event){
-
-                const file = event.target.files[0];
-                if(!file) return;
-
-                const reader = new FileReader();
-                reader.onload = function(e){
-                    csv_content = e.target.result;
-                };
-                reader.readAsText(file);
-
-            });
-
-            // read csv data 
-            function displayCSV(){
-
-                if(!csv_content){
-                    alert("No CSV loaded yet.");
-                    return;
-                }
-
-                // get lines and column names
-                lines = csv_content.trim().split(/\r?\n/);
-                headers = lines[0].split(',');
-                lines = lines.slice(1);  // remove headers
-
-                // show table and dropdown for dep and indp veriable
-                renderTable(headers, lines);
-                createVariableSelectors(headers);
-            }
-
-            // get y and x values and their stats
-            function getStats() {
-
-                // get index for x and y
-                const xIndex = document.getElementById("indSelect").value;
-                const yIndex = document.getElementById("depSelect").value;
-                
-                // get variables in those indexes
-                const data = extractVariables(xIndex, yIndex);
-                
-                // get the stats
-                const results = calculateFullStats(data.xData, data.yData);
-
-                displayStats(results);
-            }
-
-            // extract selected ind and dep variables
-            function extractVariables(xIndex,yIndex){
-                const xData = [];
-                const yData = [];
-
-                // get every variables according to the ind and dep index
-                for(let i=0; i<lines.length; i++){
-                    const cells = lines[i].split(',');
-
-                    // add x and y values to their array
-                    if(cells.length === headers.length){
-                        const x = Number(cells[xIndex]);
-                        const y = Number(cells[yIndex]);
-
-                        if(!isNaN(x) && !isNaN(y)){
-                            xData.push(x);
-                            yData.push(y);
-                        }
-                    }
-                }
-                return {xData,yData};
-            }
-
-            // calculate the stats for each ind and dep variable
-            function calculateFullStats(xData, yData) {
-
-                // define size, x and y 
-                const n = xData.length;
-                const x = xData.map(Number);
-                const y = yData.map(Number);
-
-                // formulas
-                const mean = (arr) => arr.reduce((a, b) => a + b, 0) / arr.length;
-                const getSS = (arr, mean) => arr.reduce((sum, val) => sum + (val - mean) ** 2, 0);
-                const getSP = (xArr, xMean, yArr, yMean) => xArr.reduce((sum, x, i) => sum + (x - xMean) * (yArr[i] - yMean), 0);
-
-                // get mean
-                const xMean = mean(x);
-                const yMean = mean(y);
-
-                // sum of squares
-                const ssX = getSS(x, xMean);
-                const ssY = getSS(y, yMean);
-
-                // sum of products
-                const spXY = getSP(x, xMean, y, yMean); 
-
-                // regression line (y = A + Bx)
-                const B = spXY / ssX;  // slope
-                const A = yMean - B * xMean;  // intercept
-
-                // R-squared 
-                const rSq = (spXY ** 2) / (ssX * ssY);
-
-                // ANOVA 
-                const ssBetween = rSq * ssY;
-                const ssWithin = ssY - ssBetween;
-
-                return {
-                    n: n,
-                    means: { x: xMean, y: yMean },
-                    variations: { ssX, ssY, spXY },
-                    coefficients: { unstdB: B, intercept: A },
-                    anova: { ssBetween, ssWithin },
-                    modelSummary: { rSquared: rSq }
-                };
-            }
-
-            // read API
-            async function displayAPI(){
-
-                const url = document.getElementById("apiInput").value;
-
-                if(!url){
-                    alert("Please enter an API URL.");
-                    return;
-                }
-
-                try{
-                    // get the data
-                    const response = await fetch(url);
-                    const data = await response.json();
-                    const records = data.results;
-                
-                    // get headers
-                    headers = Object.keys(records[0]);
-
-                    // obj -> rows
-                    lines = records.map(obj => 
-                        headers.map(h => obj[h]).join(",")
-                    );
-
-                    renderTable(headers, lines);
-                    createVariableSelectors(headers);
-                }
-                catch(error){
-
-                    console.error(error);
-                    alert("Failed to fetch API");
-                }
-            }
-
-            //------------- FRONTEND FUNCTIONS------------------------------------------------------------------------------------------------------
-
-            // create table to display csv
-            function renderTable(headers, lines){
-
-                let html = '<table border="1">';
-                html += "<thead><tr>";
-
-                for(let i=0; i<headers.length; i++){
-                    html += `<th>${headers[i]}</th>`;
-                }
-
-                html += "</tr></thead>";
-                html += "<tbody>";
-
-                for(let i=0;i<lines.length;i++){
-                    const cells = lines[i].split(',');
-
-                    if(cells.length === headers.length){
-                        html += "<tr>";
-
-                        for(let j=0;j<cells.length;j++){
-                            html += `<td>${cells[j]}</td>`;
-                        }
-                        html += "</tr>";
-                    }
-                }
-
-                html += "</tbody></table>";
-                document.getElementById("output").innerHTML = html;
-            }
-
-
-            // stats button
-            function createVariableSelectors(headers){
-
-                // dropdown option for indp and dep variable
-                createDropdown("indVar","indSelect","Independent Variable (X):",headers);
-                createDropdown("depVar","depSelect","Dependent Variable (Y):",headers);
-
-                // create section
-                const container = document.getElementById("variableSelectors");
-
-                // if it doesn't exist yet
-                if(!document.getElementById("statBtn")){
-                    const btn = document.createElement("button");
-                    btn.id = "statBtn";
-                    btn.textContent = "Get Statistics";
-                    btn.onclick = getStats;  // when it clicks -> getStats function
-                    container.appendChild(btn);
-                }
-
-            }
-
-            // function for the dropdowns
-            function createDropdown(containerId,selectId,labelText,options){
-
-                // section
-                const container = document.getElementById(containerId);
-                container.innerHTML = "";
-                
-                // create label
-                const label = document.createElement("label");
-                label.textContent = labelText;
-
-                // slect option
-                const select = document.createElement("select");
-                select.id = selectId;
-
-                // create an option for every variable
-                for(let i=0; i<options.length; i++){
-                    const option = document.createElement("option");
-                    option.value = i;
-                    option.textContent = options[i];
-                    select.appendChild(option);
-                }
-
-                // append to section
-                container.appendChild(label);
-                container.appendChild(select);
-            }
-
-            // show the stats
-            function displayStats(results) {
-                
-                // get section
-                const container = document.getElementById("stats");
-                container.innerHTML = "";
-                
-                // add a header
-                const summary = document.createElement("h3");
-                summary.textContent = "Model Summary";
-                container.appendChild(summary);
-
-                // show all of the stats
-                const cases = document.createElement("p");
-                cases.textContent = "Number of cases: " + results.n;
-
-                const xMean = document.createElement("p");
-                xMean.textContent = "X Mean: " + results.means.x.toFixed(2);
-
-                const yMean = document.createElement("p");
-                yMean.textContent = "Y Mean: " + results.means.y.toFixed(2);
-
-                const ssX = document.createElement("p");
-                ssX.textContent = "Sum of Squares X: " + results.variations.ssX.toFixed(2);
-
-                const ssY = document.createElement("p");
-                ssY.textContent = "Sum of Squares Y: " + results.variations.ssY.toFixed(2);
-
-                const spXY = document.createElement("p");
-                spXY.textContent = "Sum of Products X,Y: " + results.variations.spXY.toFixed(2);
-
-                const slope = document.createElement("p");
-                slope.textContent = "Slope: " + results.coefficients.unstdB.toFixed(2);
-
-                const intercept = document.createElement("p");
-                intercept.textContent = "Intercept: " + results.coefficients.intercept.toFixed(2);
-
-                const rSq = document.createElement("p");
-                rSq.textContent = "R-Squared: " + results.modelSummary.rSquared.toFixed(4);
-
-                const ssBetween = document.createElement("p");
-                ssBetween.textContent = "SS Between: " + results.anova.ssBetween.toFixed(2);
-
-                const ssWithin = document.createElement("p");
-                ssWithin.textContent = "SS Within: " + results.anova.ssWithin.toFixed(2);
-
-                container.appendChild(cases);
-                container.appendChild(xMean);
-                container.appendChild(yMean);
-                container.appendChild(ssX);
-                container.appendChild(ssY);
-                container.appendChild(spXY);
-                container.appendChild(slope);
-                container.appendChild(intercept);
-                container.appendChild(rSq);
-                container.appendChild(ssBetween);
-                container.appendChild(ssWithin);
-            }
-
-        </script>
-
-    </body>
-
+    </section>
+
+    <section class="card statsCard">
+        <h2>Statistics</h2>
+
+        <div class="stats-grid">
+
+            <div class="stat-card">
+            <div class="stat-label">Number of Cases</div>
+            <div class="stat-value" id="stat-cases">--</div>
+            </div>
+
+            <div class="stat-card">
+            <div class="stat-label">X Mean</div>
+            <div class="stat-value" id="stat-xmean">--</div>
+            </div>
+
+            <div class="stat-card">
+            <div class="stat-label">Y Mean</div>
+            <div class="stat-value" id="stat-ymean">--</div>
+            </div>
+
+            <div class="stat-card">
+            <div class="stat-label">Sum Squares X</div>
+            <div class="stat-value" id="stat-ssx">--</div>
+            </div>
+
+            <div class="stat-card">
+            <div class="stat-label">Sum Squares Y</div>
+            <div class="stat-value" id="stat-ssy">--</div>
+            </div>
+
+            <div class="stat-card">
+            <div class="stat-label">Sum Products X,Y</div>
+            <div class="stat-value" id="stat-spxy">--</div>
+            </div>
+
+            <div class="stat-card highlight">
+            <div class="stat-label">Slope (B)</div>
+            <div class="stat-value" id="stat-slope">--</div>
+            </div>
+
+            <div class="stat-card highlight">
+            <div class="stat-label">Intercept (A)</div>
+            <div class="stat-value" id="stat-intercept">--</div>
+            </div>
+
+            <div class="stat-card highlight">
+            <div class="stat-label">R-Squared</div>
+            <div class="stat-value" id="stat-rsq">--</div>
+            </div>
+
+            <div class="stat-card">
+            <div class="stat-label">SS Between</div>
+            <div class="stat-value" id="stat-ssbetween">--</div>
+            </div>
+
+            <div class="stat-card">
+            <div class="stat-label">SS Within</div>
+            <div class="stat-value" id="stat-sswithin">--</div>
+            </div>
+
+        </div>
+        </section>
+
+    <section class="card graphCard">
+        <h2>Regression Graph</h2>
+        <canvas id="regressionChart" width="600" height="400"></canvas>    
+    </section>
+
+</div>
+
+</body>
 </html>
